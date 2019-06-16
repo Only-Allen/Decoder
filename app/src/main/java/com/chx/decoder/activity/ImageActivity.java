@@ -39,7 +39,7 @@ public class ImageActivity extends DecodeActivity {
 
     @Override
     public void onResultClick() {
-
+        super.onResultClick();
     }
 
     @Override

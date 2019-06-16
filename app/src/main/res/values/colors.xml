@@ -10,4 +10,6 @@
 
     <color name="image_background">#666666</color>
     <color name="color_region_border">#489946</color>
+
+    <color name="green_light">#FF99CC00</color>
 </resources>

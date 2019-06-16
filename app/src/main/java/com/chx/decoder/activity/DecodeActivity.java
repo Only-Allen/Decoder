@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -83,9 +84,6 @@ public abstract class DecodeActivity extends BaseActivity {
         mResultContainer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mResults = null;
-                v.setVisibility(View.GONE);
-                mOperationLayout.setVisibility(View.VISIBLE);
                 onResultClick();
             }
         });
@@ -101,8 +99,6 @@ public abstract class DecodeActivity extends BaseActivity {
                         break;
                     case MotionEvent.ACTION_UP:
                         if (!isMove) {
-                            mResultContainer.setVisibility(View.GONE);
-                            mOperationLayout.setVisibility(View.VISIBLE);
                             onResultClick();
                         }
                         break;
@@ -149,7 +145,12 @@ public abstract class DecodeActivity extends BaseActivity {
 
     public abstract void onDecodeClick();
 
-    public abstract void onResultClick();
+    public void onResultClick() {
+        mResults = null;
+        mResultContainer.setVisibility(View.GONE);
+        mOperationLayout.setVisibility(View.VISIBLE);
+        clearAndHideDrawLayout();
+    }
 
     public void decodeBitmap(Bitmap bitmap) {
         if (SwiftDecoder.getInstance().decode(bitmap) == 0) {
@@ -252,7 +253,9 @@ public abstract class DecodeActivity extends BaseActivity {
         params.setMargins(rect.left, rect.top, rect.right, rect.bottom);
         TextView tv = new TextView(this);
         tv.setBackground(getResources().getDrawable(R.drawable.roi_border));
+        tv.setTextColor(getResources().getColor(R.color.green_light));
         tv.setTag(rect);
+        tv.setGravity(Gravity.CENTER);
         tv.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
@@ -269,13 +272,13 @@ public abstract class DecodeActivity extends BaseActivity {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onROIFinished(ROIFinishedEvent event) {
         List<DecoderResult> results = new ArrayList<>();
-        for (DecoderResult result : mResults) {
-            if (isInROI(result)) {
-                results.add(result);
-            }
-        }
-        clearDrawLayout();
-        mDrawLayout.setVisibility(View.GONE);
+//        for (DecoderResult result : mResults) {
+//            if (isInROI(result)) {
+//                results.add(result);
+//            }
+//        }
+        checkAndMarkRoi(results);
+
         onShowResults(results);
     }
 
@@ -284,24 +287,48 @@ public abstract class DecodeActivity extends BaseActivity {
             return false;
         }
         for (Rect rect : mRects) {
-            Point topLeftPoint = getViewPointByBitmapPoint(result.getBounds().getTopLeft());
-            Point topRightPoint = getViewPointByBitmapPoint(result.getBounds().getTopRight());
-            Point bottomLeftPoint = getViewPointByBitmapPoint(result.getBounds().getBottomLeft());
-            Point bottomRightPoint = getViewPointByBitmapPoint(result.getBounds().getBottomRight());
-            if (rect.contains(topLeftPoint.getX(), topLeftPoint.getY())
-                    && rect.contains(topRightPoint.getX(), topRightPoint.getY())
-                    && rect.contains(bottomLeftPoint.getX(), bottomLeftPoint.getY())
-                    && rect.contains(bottomRightPoint.getX(), bottomRightPoint.getY())) {
+            if (isResultInRect(rect, result)) {
                 return true;
             }
         }
         return false;
     }
 
-    public void clearDrawLayout() {
+    public void checkAndMarkRoi(List<DecoderResult> results) {
+        for (int i = 0; i < mRects.size(); i++) {
+            Rect rect = mRects.get(i);
+            boolean hasResult = false;
+            for (DecoderResult result : mResults) {
+                if (isResultInRect(rect, result)) {
+                    hasResult = true;
+                    results.add(result);
+                }
+            }
+            if (!hasResult) {
+                ((TextView) mDrawLayout.getChildAt(i + 1)).setText("No Read");
+            }
+        }
+    }
+
+    public boolean isResultInRect(Rect rect, DecoderResult result) {
+        Point topLeftPoint = getViewPointByBitmapPoint(result.getBounds().getTopLeft());
+        Point topRightPoint = getViewPointByBitmapPoint(result.getBounds().getTopRight());
+        Point bottomLeftPoint = getViewPointByBitmapPoint(result.getBounds().getBottomLeft());
+        Point bottomRightPoint = getViewPointByBitmapPoint(result.getBounds().getBottomRight());
+        return rect.contains(topLeftPoint.getX(), topLeftPoint.getY())
+                && rect.contains(topRightPoint.getX(), topRightPoint.getY())
+                && rect.contains(bottomLeftPoint.getX(), bottomLeftPoint.getY())
+                && rect.contains(bottomRightPoint.getX(), bottomRightPoint.getY());
+    }
+
+    public void clearAndHideDrawLayout() {
+        if (!mCheckBox.isChecked()) {
+            return;
+        }
         mRects.clear();
         while (mDrawLayout.getChildCount() > 1) {
             mDrawLayout.removeViewAt(1);
         }
+        mDrawLayout.setVisibility(View.GONE);
     }
 }
