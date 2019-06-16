@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Decoder</string>
+    <string name="decode">decode</string>
+    <string name="camera">camera</string>
+    <string name="image">image</string>
+    <string name="roi">roi</string>
+    <string name="warn_mac_not_allowed">the current mac is not allowed!</string>
+
+    <string-array name="sort_mode">
+        <item>line</item>
+        <item>row</item>
+    </string-array>
+</resources>
