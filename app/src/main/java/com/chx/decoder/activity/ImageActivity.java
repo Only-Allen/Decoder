@@ -2,13 +2,12 @@ package com.chx.decoder.activity;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Rect;
 import android.net.Uri;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.ImageView;
 
 import com.chx.decoder.R;
+import com.chx.decoder.bitmap.BitmapTools;
 import com.chx.decoder.decoder.result.Point;
 
 public class ImageActivity extends DecodeActivity {
@@ -38,7 +37,7 @@ public class ImageActivity extends DecodeActivity {
     }
 
     @Override
-    public void onResultClick() {
+    protected void onResultClick() {
         super.onResultClick();
     }
 
@@ -52,7 +51,8 @@ public class ImageActivity extends DecodeActivity {
                 Uri selectedImageUri = data.getData();
                 try
                 {
-                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImageUri);
+                    Bitmap bitmap = BitmapTools.getBitmapFormUri(this.getContentResolver(),
+                            selectedImageUri, mImageView.getWidth(), mImageView.getHeight());
                     mImageView.setImageBitmap(bitmap);
                     mWidth = bitmap.getWidth();
                     mHeight = bitmap.getHeight();

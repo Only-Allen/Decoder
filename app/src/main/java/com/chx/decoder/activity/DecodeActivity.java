@@ -21,6 +21,7 @@ import android.widget.Toast;
 import com.chx.decoder.R;
 import com.chx.decoder.comparator.ComparatorFactory;
 import com.chx.decoder.decoder.SwiftDecoder;
+import com.chx.decoder.decoder.result.Bounds;
 import com.chx.decoder.decoder.result.DecoderResult;
 import com.chx.decoder.decoder.result.Point;
 import com.chx.decoder.event.ROIFinishedEvent;
@@ -49,6 +50,8 @@ public abstract class DecodeActivity extends BaseActivity {
     protected final int VIEW_MARGIN = 20;
     protected final int TEXT_SIZE = 16;
     private boolean isMove;
+    private final int COUNT_INGORE = 5;
+    private int count;
 
     protected List<Rect> mRects;
 
@@ -77,9 +80,9 @@ public abstract class DecodeActivity extends BaseActivity {
         EventBus.getDefault().unregister(this);
     }
 
-    public abstract int getLayoutResource();
+    protected abstract int getLayoutResource();
 
-    public void initView() {
+    protected void initView() {
         mResultContainer = (FrameLayout) findViewById(R.id.result_container);
         mResultContainer.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -96,6 +99,7 @@ public abstract class DecodeActivity extends BaseActivity {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         isMove = false;
+                        count = 0;
                         break;
                     case MotionEvent.ACTION_UP:
                         if (!isMove) {
@@ -103,7 +107,11 @@ public abstract class DecodeActivity extends BaseActivity {
                         }
                         break;
                     case MotionEvent.ACTION_MOVE:
-                        isMove = true;
+                        if (!isMove) {
+                            if (count++ > COUNT_INGORE) {
+                                isMove = true;
+                            }
+                        }
                         break;
                 }
                 return false;
@@ -143,16 +151,16 @@ public abstract class DecodeActivity extends BaseActivity {
         mDrawLayout = (FrameLayout) findViewById(R.id.layout_region);
     }
 
-    public abstract void onDecodeClick();
+    protected abstract void onDecodeClick();
 
-    public void onResultClick() {
+    protected void onResultClick() {
         mResults = null;
         mResultContainer.setVisibility(View.GONE);
         mOperationLayout.setVisibility(View.VISIBLE);
         clearAndHideDrawLayout();
     }
 
-    public void decodeBitmap(Bitmap bitmap) {
+    protected void decodeBitmap(Bitmap bitmap) {
         if (SwiftDecoder.getInstance().decode(bitmap) == 0) {
             Toast.makeText(getApplicationContext(), "Decoding failed", Toast.LENGTH_LONG).show();
         } else {
@@ -170,22 +178,22 @@ public abstract class DecodeActivity extends BaseActivity {
         }
     }
 
-    public void beforeShowResults() {
+    protected void beforeShowResults() {
         mOperationLayout.setVisibility(View.INVISIBLE);
     }
 
-    public void onShowResults(List<DecoderResult> results) {
+    private void onShowResults(List<DecoderResult> results) {
         mResultContainer.setVisibility(View.VISIBLE);
         sortResults(results);
         showResultsByText(results);
         showResultsByImage(results);
     }
 
-    public void sortResults(List<DecoderResult> results) {
+    private void sortResults(List<DecoderResult> results) {
         Collections.sort(results, ComparatorFactory.getComparator(mType));
     }
 
-    public void showResultsByText(List<DecoderResult> results) {
+    private void showResultsByText(List<DecoderResult> results) {
         mTextResultContainer.removeAllViews();
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -197,7 +205,11 @@ public abstract class DecodeActivity extends BaseActivity {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < results.size(); i++) {
             DecoderResult result = results.get(i);
-            sb.append((i + 1) + ":" + result.getResult() + "\n");
+            if (result == null) {
+                sb.append((i + 1) + "NO READ\n");
+            } else {
+                sb.append((i + 1) + ":" + result.getResult() + "\n");
+            }
             if (i < results.size() - 1) {
                 sb.append("\n");
             }
@@ -206,24 +218,31 @@ public abstract class DecodeActivity extends BaseActivity {
         mTextResultContainer.addView(v, layoutParams);
     }
 
-    public void showResultsByImage(List<DecoderResult> results) {
+    private void showResultsByImage(List<DecoderResult> results) {
         mImageResultContainer.removeAllViews();
         int size = results.size();
         for (int i = 0; i < size; i++) {
             DecoderResult result = results.get(i);
-            TextView tv = new TextView(this);
-            tv.setTextColor(getResources().getColor(R.color.mark_text));
-            tv.setTextSize(TEXT_SIZE);
-            tv.setBackground(getResources().getDrawable(R.drawable.mark_view_style));
-            tv.setText(String.format("%d/%d", i + 1, size));
-            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(VIEW_SIZE, VIEW_SIZE);
-            fillParams(result, params);
-            mImageResultContainer.addView(tv, params);
+            if (result != null) {
+                TextView tv = new TextView(this);
+                tv.setTextColor(getResources().getColor(R.color.mark_text));
+                tv.setTextSize(TEXT_SIZE);
+                tv.setBackground(getResources().getDrawable(R.drawable.mark_view_style));
+                tv.setText(String.format("%d/%d", i + 1, size));
+                FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(VIEW_SIZE, VIEW_SIZE);
+                fillParams(result, params);
+                mImageResultContainer.addView(tv, params);
+            }
         }
     }
 
-    public void fillParams(DecoderResult result, FrameLayout.LayoutParams params) {
-        Point point = getViewPointByBitmapPoint(result.getBounds().getMarkPoint());
+    private void fillParams(DecoderResult result, FrameLayout.LayoutParams params) {
+        Point point;
+        if (mCheckBox.isChecked()) {
+            point = result.getBounds().getTopLeft();
+        } else {
+            point = getViewPointByBitmapPoint(result.getBounds().getMarkPoint());
+        }
         int marginLeft = point.getX() - VIEW_MARGIN;
         if (marginLeft < 0) marginLeft = 0;
         int marginTop = point.getY() - VIEW_MARGIN;
@@ -231,13 +250,13 @@ public abstract class DecodeActivity extends BaseActivity {
         params.setMargins(marginLeft, marginTop, 0, 0);
     }
 
-    public abstract Point getViewPointByBitmapPoint(Point point);
+    protected abstract Point getViewPointByBitmapPoint(Point point);
 
-    public boolean isROIEnabled() {
+    private boolean isROIEnabled() {
         return mCheckBox.isChecked();
     }
 
-    public void showROILayout() {
+    private void showROILayout() {
         mDrawLayout.setVisibility(View.VISIBLE);
     }
 
@@ -278,7 +297,6 @@ public abstract class DecodeActivity extends BaseActivity {
 //            }
 //        }
         checkAndMarkRoi(results);
-
         onShowResults(results);
     }
 
@@ -294,34 +312,52 @@ public abstract class DecodeActivity extends BaseActivity {
         return false;
     }
 
-    public void checkAndMarkRoi(List<DecoderResult> results) {
+    private void checkAndMarkRoi(List<DecoderResult> results) {
         for (int i = 0; i < mRects.size(); i++) {
             Rect rect = mRects.get(i);
             boolean hasResult = false;
+            DecoderResult decoderResult = null;
             for (DecoderResult result : mResults) {
                 if (isResultInRect(rect, result)) {
                     hasResult = true;
-                    results.add(result);
+                    if (decoderResult == null) {
+                        result.setSiteWithRect(rect);
+                        decoderResult = result;
+                        results.add(result);
+                    } else {
+                        decoderResult.setResult(decoderResult.getResult()
+                                + "\n--" + result.getResult());
+                    }
                 }
             }
             if (!hasResult) {
                 ((TextView) mDrawLayout.getChildAt(i + 1)).setText("No Read");
+                DecoderResult r = new DecoderResult(new Point(), new Bounds(new Point(),
+                        new Point(), new Point(), new Point()), "No Read", 7);
+                r.setSiteWithRect(rect);
+                r.setResult("No Read");
+                results.add(r);
             }
         }
     }
 
-    public boolean isResultInRect(Rect rect, DecoderResult result) {
-        Point topLeftPoint = getViewPointByBitmapPoint(result.getBounds().getTopLeft());
-        Point topRightPoint = getViewPointByBitmapPoint(result.getBounds().getTopRight());
-        Point bottomLeftPoint = getViewPointByBitmapPoint(result.getBounds().getBottomLeft());
-        Point bottomRightPoint = getViewPointByBitmapPoint(result.getBounds().getBottomRight());
-        return rect.contains(topLeftPoint.getX(), topLeftPoint.getY())
-                && rect.contains(topRightPoint.getX(), topRightPoint.getY())
-                && rect.contains(bottomLeftPoint.getX(), bottomLeftPoint.getY())
-                && rect.contains(bottomRightPoint.getX(), bottomRightPoint.getY());
+    private boolean isResultInRect(Rect rect, DecoderResult result) {
+//        检测四个边界坐标都在rect中
+//        Point topLeftPoint = getViewPointByBitmapPoint(result.getBounds().getTopLeft());
+//        Point topRightPoint = getViewPointByBitmapPoint(result.getBounds().getTopRight());
+//        Point bottomLeftPoint = getViewPointByBitmapPoint(result.getBounds().getBottomLeft());
+//        Point bottomRightPoint = getViewPointByBitmapPoint(result.getBounds().getBottomRight());
+//        return rect.contains(topLeftPoint.getX(), topLeftPoint.getY())
+//                && rect.contains(topRightPoint.getX(), topRightPoint.getY())
+//                && rect.contains(bottomLeftPoint.getX(), bottomLeftPoint.getY())
+//                && rect.contains(bottomRightPoint.getX(), bottomRightPoint.getY());
+
+//      检测中心坐标在rect中
+        Point center = getViewPointByBitmapPoint(result.getCenter());
+        return rect.contains(center.getX(), center.getY());
     }
 
-    public void clearAndHideDrawLayout() {
+    private void clearAndHideDrawLayout() {
         if (!mCheckBox.isChecked()) {
             return;
         }

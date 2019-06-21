@@ -28,6 +28,8 @@ public class DrawView extends View {
     private Rect mRect;
     private List<Rect> mRects;
     private boolean isMove;
+    private final int COUNT_INGORE = 5;
+    private int count;
 
     public DrawView(Context context) {
         this(context, null);
@@ -71,10 +73,15 @@ public class DrawView extends View {
             case MotionEvent.ACTION_DOWN:
                 onMotionDown(event);
                 isMove = false;
+                count = 0;
                 break;
             case MotionEvent.ACTION_MOVE:
                 onMotionMove(event);
-                isMove = true;
+                if (!isMove) {
+                    if (count++ > COUNT_INGORE) {
+                        isMove = true;
+                    }
+                }
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:

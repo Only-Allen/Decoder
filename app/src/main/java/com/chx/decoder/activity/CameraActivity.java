@@ -56,7 +56,7 @@ public class CameraActivity extends DecodeActivity {
     }
 
     @Override
-    public void onResultClick() {
+    protected void onResultClick() {
         super.onResultClick();
         CameraTools.getInstance().start();
     }

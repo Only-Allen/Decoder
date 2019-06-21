@@ -1,5 +1,7 @@
 package com.chx.decoder.decoder.result;
 
+import android.graphics.Rect;
+
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 
@@ -54,6 +56,26 @@ public class DecoderResult {
 
     public void setLength(int length) {
         this.length = length;
+    }
+
+    public void setSiteWithRect(Rect rect) {
+        if (center == null) {
+            center = new Point();
+        }
+        center.setX((rect.left + rect.right) / 2);
+        center.setY((rect.top + rect.bottom) / 2);
+
+        if (bounds == null) {
+            bounds = new Bounds(new Point(), new Point(), new Point(), new Point());
+        }
+        bounds.getTopLeft().setX(rect.left);
+        bounds.getTopLeft().setY(rect.top);
+        bounds.getTopRight().setX(rect.right);
+        bounds.getTopRight().setY(rect.top);
+        bounds.getBottomLeft().setX(rect.left);
+        bounds.getBottomLeft().setY(rect.bottom);
+        bounds.getBottomRight().setX(rect.right);
+        bounds.getBottomRight().setY(rect.bottom);
     }
 
     public static void main(String[] args) {
