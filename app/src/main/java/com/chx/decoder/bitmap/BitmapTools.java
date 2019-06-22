@@ -45,12 +45,13 @@ public class BitmapTools {
         if ((originalWidth == -1) || (originalHeight == -1))
             return null;
         Log.d(TAG, originalWidth + "..." + originalHeight);
-        int be = Math.max(originalWidth / width, originalHeight / height);
+        int be = Math.min(originalWidth / width, originalHeight / height);
 
         if (be <= 0) {//如果缩放比比1小，那么保持原图不缩放
             be = 1;
         }
         Log.d(TAG,  "scale : " + be);
+//        be = 1;
         //比例压缩
         BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
         bitmapOptions.inSampleSize = be;//设置缩放比例

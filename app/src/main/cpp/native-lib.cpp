@@ -38,9 +38,8 @@ Java_com_chx_decoder_decoder_SwiftDecoder_createSD(JNIEnv *env, jobject instance
         || (0 == checkSDSet(handle, SD_PROP_C128_ENABLED, (void *) ENA))
         || (0 == checkSDSet(handle, SD_PROP_C39_ENABLED, (void *) ENA))
         || (0 == checkSDSet(handle, SD_PROP_UPC_ENABLED, (void *) ENA))
-        || (0 == checkSDSet(handle, SD_PROP_DM_ENABLED, (void *) ENA))
-        || (0 == checkSDSet(handle, SD_PROP_QR_ENABLED, (void *) ENA))
-        || (0 == checkSDSet(handle, SD_PROP_AZ_ENABLED, (void *) (SD_CONST_INVERSE_ENABLED + SD_CONST_ENABLED)))) {
+        || (0 == checkSDSet(handle, SD_PROP_DM_ENABLED, (void *) (SD_CONST_INVERSE_ENABLED + SD_CONST_ENABLED)))
+        || (0 == checkSDSet(handle, SD_PROP_QR_ENABLED, (void *) ENA))) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "failed to set properties!!!!");
         return 0;
     }
