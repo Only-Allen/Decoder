@@ -2,7 +2,8 @@
 #include <string>
 #include <android/log.h>
 #include <android/bitmap.h>
-#include "include/SD.h"
+#include "SD.h"
+#include "ActivationManager.h"
 
 #define RED_565(a)      ((((a) & 0x0000f800) >> 11) << 3)
 #define GREEN_565(a)    ((((a) & 0x000007e0) >> 5) << 2)
@@ -20,26 +21,30 @@ static char result_string[10000], *result_ptr;
 static const char *TAG = "swift_decode";
 
 static void resultCallback(int handle);
+
 static int checkSDSet(int handle, int property, void *value);
+
 static unsigned char *convertJByteArrayToChars(JNIEnv *env, jbyteArray byteArray);
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_chx_decoder_decoder_SwiftDecoder_createSD(JNIEnv *env, jobject instance) {
     int handle = SD_Create();
     if (handle == 0) {
-        __android_log_print(ANDROID_LOG_ERROR, TAG, "failed to create SD!!!!error = %d", SD_GetLastError());
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "failed to create SD!!!!error = %d",
+                            SD_GetLastError());
         return 0;
     }
-    int ENA = 1;
 
     // Set the result handler callback address
     if ((0 == checkSDSet(handle, SD_PROP_CALLBACK_RESULT, (void *) &resultCallback))
-        || (0 == checkSDSet(handle, SD_PROP_CALLBACK_PROGRESS, nullptr))
-        || (0 == checkSDSet(handle, SD_PROP_C128_ENABLED, (void *) ENA))
-        || (0 == checkSDSet(handle, SD_PROP_C39_ENABLED, (void *) ENA))
-        || (0 == checkSDSet(handle, SD_PROP_UPC_ENABLED, (void *) ENA))
-        || (0 == checkSDSet(handle, SD_PROP_DM_ENABLED, (void *) (SD_CONST_INVERSE_ENABLED + SD_CONST_ENABLED)))
-        || (0 == checkSDSet(handle, SD_PROP_QR_ENABLED, (void *) ENA))) {
+        || (0 == checkSDSet(handle, SD_PROP_CALLBACK_PROGRESS, NULL))
+        || (0 == checkSDSet(handle, SD_PROP_C128_ENABLED, (void *) SD_CONST_ENABLED))
+        || (0 == checkSDSet(handle, SD_PROP_C39_ENABLED, (void *) SD_CONST_ENABLED))
+        || (0 == checkSDSet(handle, SD_PROP_UPC_ENABLED, (void *) SD_CONST_ENABLED))
+        //        || (0 == checkSDSet(handle, SD_PROP_MISC_ISSUE_IDENTICAL_SYMBOLS, (void *) SD_CONST_ENABLED))
+        || (0 == checkSDSet(handle, SD_PROP_DM_ENABLED,
+                            (void *) (SD_CONST_INVERSE_ENABLED + SD_CONST_ENABLED)))
+        || (0 == checkSDSet(handle, SD_PROP_QR_ENABLED, (void *) SD_CONST_ENABLED))) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "failed to set properties!!!!");
         return 0;
     }
@@ -54,7 +59,7 @@ Java_com_chx_decoder_decoder_SwiftDecoder_decode(JNIEnv *env, jobject instance, 
     uint32_t *rgb_buffer;
     static size_t image_size = 0;
 
-    static unsigned char *ImageBuffer = nullptr;
+    static unsigned char *ImageBuffer = NULL;
 
     // 重置result_ptr的地址为result_string起始地址，清空result_string
     result_ptr = result_string;
@@ -74,7 +79,7 @@ Java_com_chx_decoder_decoder_SwiftDecoder_decode(JNIEnv *env, jobject instance, 
     image_size = (size_t) info.width * info.height;
     ImageBuffer = (unsigned char *) malloc(image_size);
 
-    if (ImageBuffer == nullptr) {
+    if (ImageBuffer == NULL) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "Can't allocate image buffer");
         AndroidBitmap_unlockPixels(env, bitmap);
         return 0;
@@ -140,11 +145,13 @@ Java_com_chx_decoder_decoder_SwiftDecoder_destroySD(JNIEnv *env, jobject instanc
     if (handle != 0) {
         int result = SD_Destroy(handle);
         if (result == 0) {
-            __android_log_print(ANDROID_LOG_ERROR, TAG, "failed to destroy SD!!!!error = %d", SD_GetLastError());
+            __android_log_print(ANDROID_LOG_ERROR, TAG, "failed to destroy SD!!!!error = %d",
+                                SD_GetLastError());
             return 0;
         }
     } else {
-        __android_log_print(ANDROID_LOG_WARN, TAG, "handle is 0 when destroy!!!!error = %d", SD_GetLastError());
+        __android_log_print(ANDROID_LOG_WARN, TAG, "handle is 0 when destroy!!!!error = %d",
+                            SD_GetLastError());
         return 0;
     }
     return 1;
@@ -169,18 +176,20 @@ static void resultCallback(int handle) {
                           "\"bottomRight\":{\"x\":%d,\"y\":%d},"
                           "\"bottomLeft\":{\"x\":%d,\"y\":%d}},"
                           "\"result\":\"", length, center.X, center.Y,
-                          bounds.Point[0].X, bounds.Point[0].Y, bounds.Point[1].X, bounds.Point[1].Y,
-                          bounds.Point[2].X, bounds.Point[2].Y, bounds.Point[3].X, bounds.Point[3].Y);
+                          bounds.Point[0].X, bounds.Point[0].Y, bounds.Point[1].X,
+                          bounds.Point[1].Y,
+                          bounds.Point[2].X, bounds.Point[2].Y, bounds.Point[3].X,
+                          bounds.Point[3].Y);
     SD_Get(handle, SD_PROP_RESULT_STRING, result_ptr);
     result_ptr += length;
     result_ptr += sprintf(result_ptr, "\"}\n");
 }
 
 unsigned char *convertJByteArrayToChars(JNIEnv *env, jbyteArray byteArray) {
-    unsigned char *chars = nullptr;
+    unsigned char *chars = NULL;
     jbyte *bytes;
-    bytes = env->GetByteArrayElements(byteArray, nullptr);
-    auto chars_len = (size_t) env->GetArrayLength(byteArray);
+    bytes = env->GetByteArrayElements(byteArray, NULL);
+    int chars_len = (size_t) env->GetArrayLength(byteArray);
     chars = new unsigned char[chars_len + 1];
     memset(chars, 0, chars_len + 1);
     memcpy(chars, bytes, chars_len);
@@ -196,4 +205,43 @@ int checkSDSet(int handle, int property, void *value) {
                             property, SD_GetLastError());
     }
     return result;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_chx_decoder_decoder_SwiftDecoder_activateWithLocalServer(JNIEnv *env, jobject instance,
+                                                                  jstring filename_,
+                                                                  jstring path_) {
+    int ret;
+    static unsigned char *fileBuffer = NULL;
+
+    const char *filename = env->GetStringUTFChars(filename_, NULL);
+    const char *key = "trial-test1-tjian-02012019"; //licenses
+    const char *url = "http://activate.speedata.cn:7071"; //使用你的本地服务器IP
+    //你的应用包名
+    const char *path = env->GetStringUTFChars(path_, NULL); //使用你的设备的目录
+
+    FILE *file0 = NULL;
+    file0 = fopen(filename, "rbe");
+    if (NULL == file0) {
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "failed to open bin file\n");
+        env->ReleaseStringUTFChars(filename_, filename);
+        env->ReleaseStringUTFChars(path_, path);
+        return 2;
+    }
+
+    fileBuffer = (unsigned char *) malloc(4000);
+    fread(fileBuffer, 3980, 1, file0);
+    fclose(file0);
+
+//    ret = ActivateAPIWithLocalServer(key, path, url, fileBuffer, 3980);
+//    test_chx();
+    ret = ActivateAPIWithLocalServer(key, path, url, fileBuffer, 3980);
+    if (ret == 0) {
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "ActivateAPIWithLocalServer failed\n");
+    }
+
+    env->ReleaseStringUTFChars(filename_, filename);
+    env->ReleaseStringUTFChars(path_, path);
+
+    return ret;
 }
