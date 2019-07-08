@@ -1,7 +1,10 @@
 #include <jni.h>
-#include <string>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
 #include <android/log.h>
 #include <android/bitmap.h>
+#include <malloc.h>
 #include "SD.h"
 #include "ActivationManager.h"
 
@@ -19,6 +22,8 @@
 
 static char result_string[10000], *result_ptr;
 static const char *TAG = "swift_decode";
+static const char *DECODE_KEY = "trial-test1-tjian-02012019";
+static const char *DECODE_URL = "http://activate.speedata.cn:7071";
 
 static void resultCallback(int handle);
 
@@ -26,8 +31,7 @@ static int checkSDSet(int handle, int property, void *value);
 
 static unsigned char *convertJByteArrayToChars(JNIEnv *env, jbyteArray byteArray);
 
-extern "C" JNIEXPORT jint JNICALL
-Java_com_chx_decoder_decoder_SwiftDecoder_createSD(JNIEnv *env, jobject instance) {
+jint Java_com_chx_decoder_decoder_SwiftDecoder_createSD(JNIEnv *env, jobject instance) {
     int handle = SD_Create();
     if (handle == 0) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "failed to create SD!!!!error = %d",
@@ -51,9 +55,8 @@ Java_com_chx_decoder_decoder_SwiftDecoder_createSD(JNIEnv *env, jobject instance
     return handle;
 }
 
-extern "C" JNIEXPORT jint JNICALL
-Java_com_chx_decoder_decoder_SwiftDecoder_decode(JNIEnv *env, jobject instance, jint handle,
-                                                 jobject bitmap) {
+jint Java_com_chx_decoder_decoder_SwiftDecoder_decode(JNIEnv *env, jobject instance, jint handle,
+                                                      jobject bitmap) {
     AndroidBitmapInfo info;
     int i = 0;
     uint32_t *rgb_buffer;
@@ -135,13 +138,11 @@ Java_com_chx_decoder_decoder_SwiftDecoder_decode(JNIEnv *env, jobject instance, 
 
 }
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_chx_decoder_decoder_SwiftDecoder_getResult(JNIEnv *env, jobject instance) {
-    return env->NewStringUTF(result_string);
+jstring Java_com_chx_decoder_decoder_SwiftDecoder_getResult(JNIEnv *env, jobject instance) {
+    return (*env)->NewStringUTF(env, result_string);
 }
 
-extern "C" JNIEXPORT jint JNICALL
-Java_com_chx_decoder_decoder_SwiftDecoder_destroySD(JNIEnv *env, jobject instance, jint handle) {
+jint Java_com_chx_decoder_decoder_SwiftDecoder_destroySD(JNIEnv *env, jobject instance, jint handle) {
     if (handle != 0) {
         int result = SD_Destroy(handle);
         if (result == 0) {
@@ -185,47 +186,31 @@ static void resultCallback(int handle) {
     result_ptr += sprintf(result_ptr, "\"}\n");
 }
 
-unsigned char *convertJByteArrayToChars(JNIEnv *env, jbyteArray byteArray) {
-    unsigned char *chars = NULL;
-    jbyte *bytes;
-    bytes = env->GetByteArrayElements(byteArray, NULL);
-    int chars_len = (size_t) env->GetArrayLength(byteArray);
-    chars = new unsigned char[chars_len + 1];
-    memset(chars, 0, chars_len + 1);
-    memcpy(chars, bytes, chars_len);
-    chars[chars_len] = 0;
-    env->ReleaseByteArrayElements(byteArray, bytes, 0);
-    return chars;
-}
-
 int checkSDSet(int handle, int property, void *value) {
     int result = SD_Set(handle, property, value);
     if (result == 0) {
-        __android_log_print(ANDROID_LOG_ERROR, TAG, "set property of %d failed, error = %d",
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "set property of 0x%x failed, error = %d",
                             property, SD_GetLastError());
     }
     return result;
 }
 
-extern "C" JNIEXPORT jint JNICALL
-Java_com_chx_decoder_decoder_SwiftDecoder_activateWithLocalServer(JNIEnv *env, jobject instance,
+jint Java_com_chx_decoder_decoder_SwiftDecoder_activateWithLocalServer(JNIEnv *env, jobject instance,
                                                                   jstring filename_,
                                                                   jstring path_) {
     int ret;
     static unsigned char *fileBuffer = NULL;
 
-    const char *filename = env->GetStringUTFChars(filename_, NULL);
-    const char *key = "trial-test1-tjian-02012019"; //licenses
-    const char *url = "http://activate.speedata.cn:7071"; //使用你的本地服务器IP
+    const char *filename = (*env)->GetStringUTFChars(env, filename_, NULL);
     //你的应用包名
-    const char *path = env->GetStringUTFChars(path_, NULL); //使用你的设备的目录
+    const char *path = (*env)->GetStringUTFChars(env, path_, NULL); //使用你的设备的目录
 
     FILE *file0 = NULL;
     file0 = fopen(filename, "rbe");
     if (NULL == file0) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "failed to open bin file\n");
-        env->ReleaseStringUTFChars(filename_, filename);
-        env->ReleaseStringUTFChars(path_, path);
+        (*env)->ReleaseStringUTFChars(env, filename_, filename);
+        (*env)->ReleaseStringUTFChars(env, path_, path);
         return 2;
     }
 
@@ -235,13 +220,23 @@ Java_com_chx_decoder_decoder_SwiftDecoder_activateWithLocalServer(JNIEnv *env, j
 
 //    ret = ActivateAPIWithLocalServer(key, path, url, fileBuffer, 3980);
 //    test_chx();
-    ret = ActivateAPIWithLocalServer(key, path, url, fileBuffer, 3980);
+    ret = ActivateAPIWithLocalServer(DECODE_KEY, path, DECODE_URL, fileBuffer, 3980);
+    __android_log_print(ANDROID_LOG_DEBUG, TAG, "the result of activate is %d", ret);
     if (ret == 0) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "ActivateAPIWithLocalServer failed\n");
     }
 
-    env->ReleaseStringUTFChars(filename_, filename);
-    env->ReleaseStringUTFChars(path_, path);
+    (*env)->ReleaseStringUTFChars(env, filename_, filename);
+    (*env)->ReleaseStringUTFChars(env, path_, path);
 
+    return ret;
+}
+
+jint Java_com_chx_decoder_decoder_SwiftDecoder_isActivated(JNIEnv *env, jobject instance, jstring path_) {
+    int ret;
+    char *path = (*env)->GetStringUTFChars(env, path_, NULL);
+    ret = IsActivated(DECODE_KEY, path);
+    __android_log_print(ANDROID_LOG_DEBUG, TAG, "the result of isActivated is %d", ret);
+    (*env)->ReleaseStringUTFChars(env, path_, path);
     return ret;
 }

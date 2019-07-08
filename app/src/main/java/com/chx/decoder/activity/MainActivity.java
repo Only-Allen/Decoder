@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.chx.decoder.R;
+import com.chx.decoder.decoder.SwiftDecoder;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener {
 
@@ -22,6 +23,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 //            finish();
 //        }
         initView();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                SwiftDecoder.activateIfNeed(MainActivity.this);
+            }
+        }).start();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     public void initView() {

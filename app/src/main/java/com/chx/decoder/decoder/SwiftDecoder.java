@@ -2,7 +2,6 @@ package com.chx.decoder.decoder;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.util.Log;
 
@@ -24,7 +23,7 @@ public class SwiftDecoder {
     }
 
     private static SwiftDecoder swiftDecoder;
-    private static final String FILE_NANE = "IdentityClient.bin";
+    private static final String FILE_NAME = "IdentityClient.bin";
 
     private static final String TAG = "SwiftDecoder";
     private int mHandle;
@@ -57,14 +56,21 @@ public class SwiftDecoder {
 
     private native String getResult();
 
-    private native int activateWithLocalServer(String filename, String path);
+    private static native int activateWithLocalServer(String filename, String path);
 
-    public int activate(Context context) {
-        int ret = copyAssetsFile2Phone(context);
-        if (ret != 0) {
-            return ret;
+    //1-success, 0-failed
+    private static native int isActivated(String filename);
+
+    public static int activateIfNeed(Context context) {
+        String path = getActivateFilePath(context);
+        if (isActivated(path) != 1) {
+            int ret = copyAssetsFile2Phone(context);
+            if (ret != 0) {
+                return ret;
+            }
+            return activateWithLocalServer(path, path.substring(0, path.lastIndexOf("/")));
         }
-        return activateWithLocalServer(FILE_NANE, getActivateFilePath(context));
+        return 0;
     }
 
     //return 0 means error occur
@@ -116,10 +122,10 @@ public class SwiftDecoder {
         return null;
     }
 
-    public int copyAssetsFile2Phone(Context context) {
-        Log.d(TAG, "准备复制模型文件");
+    public static int copyAssetsFile2Phone(Context context) {
+        Log.d(TAG, "prepare to copy bin file");
         try {
-            InputStream inputStream = context.getAssets().open(FILE_NANE);
+            InputStream inputStream = context.getAssets().open(FILE_NAME);
             //getFilesDir() 获得当前APP的安装路径 /data/data/ 目录
             Log.d(TAG, "package name:" + context.getPackageName());
             @SuppressLint("SdCardPath") File file = new File(getActivateFilePath(context));
@@ -135,24 +141,22 @@ public class SwiftDecoder {
                 fos.flush();
                 inputStream.close();
                 fos.close();
-                Log.d(TAG, "模型文件复制完毕");
+                Log.d(TAG, "copy bin file succeed");
                 return 0;
             } else {
-                Log.d(TAG, "模型文件已存在，无需复制");
-                return -1;
+                Log.w(TAG, "bin file is exist!");
+                return 0;
             }
         } catch (IOException e) {
-            e.printStackTrace();
-            Log.d(TAG, "复制模型文件出现问题");
+            Log.e(TAG, "copy bin file failed!", e);
             return -2;
         }
     }
 
-    public String getActivateFilePath(Context context) {
+    public static String getActivateFilePath(Context context) {
         StringBuilder sb = new StringBuilder();
         Log.d(TAG, "the path of context:" + context.getFilesDir().getPath());
-        sb.append("/data/data/").append(context.getPackageName()).append("/").append(FILE_NANE);
+        sb.append("/data/data/").append(context.getPackageName()).append("/").append(FILE_NAME);
         return sb.toString();
     }
-
 }

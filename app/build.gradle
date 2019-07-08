@@ -10,14 +10,11 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
-            cmake {
-                cppFlags ""
-            }
-
             ndk {
                 abiFilters "armeabi-v7a"
             }
         }
+
     }
     buildTypes {
         release {
@@ -26,9 +23,8 @@ android {
         }
     }
     externalNativeBuild {
-        cmake {
-            path "src/main/cpp/CMakeLists.txt"
-            version "3.10.2"
+        ndkBuild {
+            path file('src/main/cpp/Android.mk')
         }
     }
 }
