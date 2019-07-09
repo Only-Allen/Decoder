@@ -51,7 +51,7 @@ public class BitmapTools {
             be = 1;
         }
         Log.d(TAG,  "scale : " + be);
-        be = 1;
+//        be = 1;
         //比例压缩
         BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
         bitmapOptions.inSampleSize = be;//设置缩放比例

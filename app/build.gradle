@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 21
     defaultConfig {
-        applicationId "com.chx.decoder2"
+        applicationId "com.chx.decoder"
         minSdkVersion 19
         targetSdkVersion 21
         versionCode 1
