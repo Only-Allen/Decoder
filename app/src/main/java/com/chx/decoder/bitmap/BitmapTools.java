@@ -60,6 +60,7 @@ public class BitmapTools {
         input = resolver.openInputStream(uri);
         Bitmap bitmap = BitmapFactory.decodeStream(input, null, bitmapOptions);
         input.close();
+        Log.d(TAG, "bitmap returning width:" + bitmap.getWidth() + ", height:" + bitmap.getHeight());
         return bitmap;//再进行质量压缩
     }
 
