@@ -56,7 +56,8 @@ public class ImageActivity extends DecodeActivity {
                     mImageView.setImageBitmap(bitmap);
                     mWidth = bitmap.getWidth();
                     mHeight = bitmap.getHeight();
-                    decodeBitmap(bitmap);
+//                    decodeBitmap(bitmap);
+                    decode(BitmapTools.getBytesToDecode(bitmap), mWidth, mHeight);
                 } catch (Exception e) {
                     Log.e(TAG, "generate bitmap failed!", e);
                 }

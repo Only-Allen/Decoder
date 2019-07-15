@@ -5,15 +5,17 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.Log;
 
-import com.chx.decoder.constants.Constants;
 import com.chx.decoder.decoder.result.DecoderResult;
-import com.google.gson.Gson;
+import com.honeywell.barcode.DecodeManager;
+import com.honeywell.barcode.HSMDecodeResult;
+import com.honeywell.barcode.Symbology;
+import com.honeywell.misc.HSMLog;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class SwiftDecoder {
@@ -26,99 +28,112 @@ public class SwiftDecoder {
     private static final String FILE_NAME = "IdentityClient.bin";
 
     private static final String TAG = "SwiftDecoder";
-    private int mHandle;
-    private Gson gson;
 
-    private SwiftDecoder() {
-        mHandle = createSD();
-        if (mHandle == 0) {
-            Log.e(TAG, "create SD failed!!");
-        }
-        gson = new Gson();
+    private DecodeManager decodeManager;
+
+    private SwiftDecoder(Context context) {
+        decodeManager = DecodeManager.getInstance(context);
+        initDecodeManager();
     }
 
-    public static SwiftDecoder getInstance() {
+    private void initDecodeManager() {
+        decodeManager.enableDecoding(true);
+        enableSymbology(Symbology.UPCA);
+        enableSymbology(Symbology.CODE128);
+        enableSymbology(Symbology.CODE39);
+        enableSymbology(Symbology.QR);
+    }
+
+    public static SwiftDecoder getInstance(Context context) {
         if (swiftDecoder == null) {
             synchronized (SwiftDecoder.class) {
                 if (swiftDecoder == null) {
-                    swiftDecoder = new SwiftDecoder();
+                    swiftDecoder = new SwiftDecoder(context);
                 }
             }
         }
         return swiftDecoder;
     }
 
-    private native int createSD();
-
-    private native int destroySD(int handle);
-
-    private native int decode(int handle, Bitmap bitmap);
-
-    private native String getResult();
-
-    private static native int activateWithLocalServer(String filename, String path);
-
-    //1-success, 0-failed
-    private static native int isActivated(String filename);
+    public static void release() {
+        DecodeManager.destroyInstance();
+        swiftDecoder = null;
+    }
 
     public static int activateIfNeed(Context context) {
-        String path = getActivateFilePath(context);
-        if (isActivated(path) != 1) {
-            int ret = copyAssetsFile2Phone(context);
-            if (ret != 0) {
-                return ret;
-            }
-            return activateWithLocalServer(path, path.substring(0, path.lastIndexOf("/")));
-        }
-        return 0;
+        return DecodeManager.getInstance(context).activate("");
     }
 
     //return 0 means error occur
     public int decode(Bitmap bitmap) {
-        if (mHandle == 0) {
-            Log.e(TAG, "handle is 0 when decode");
-            return 0;
-        }
-        int result = decode(mHandle, bitmap);
-        if (result == 0) {
-            Log.e(TAG, "decode failed!!");
-        }
-        return result;
+
+        return 0;
     }
 
-    //return 0 means error occur
-    public int release() {
-        if (mHandle == 0) {
-            Log.e(TAG, "handle is 0 when release");
+    public List<DecoderResult> decode(byte[] bytes, int width, int height) {
+        HSMDecodeResult[] results = decodeManager.decode(bytes, width, height);
+        return DecoderResult.toDecoderResults(results);
+    }
+
+    public boolean enableSymbology(int symbology) {
+        try {
+            int[] symbs = new int[]{symbology};
+            return this.enableSymbology(symbs);
+        } catch (Exception var3) {
+            HSMLog.e(var3);
+            return false;
         }
-        int result = destroySD(mHandle);
-        if (result == 0) {
-            Log.e(TAG, "destroy SD failed!!");
+    }
+
+    public boolean enableSymbology(int[] symbologies) {
+        try {
+            HSMLog.trace();
+            HashMap<String, String> params = new HashMap();
+            int[] var3 = symbologies;
+            int i = symbologies.length;
+
+            int res;
+            for (int var5 = 0; var5 < i; ++var5) {
+                res = var3[var5];
+                params.put("SymbologyId", String.valueOf(res));
+            }
+
+            boolean result = true;
+
+            for (i = 0; i < symbologies.length; ++i) {
+                int val;
+                if (symbologies[i] >= 1 && symbologies[i] <= 30) {
+                    res = decodeManager.SetProperty(437321729, symbologies[i]);
+                    result &= res == 1;
+                } else {
+                    switch (symbologies[i]) {
+                        case 436367361:
+                        case 436375553:
+                            val = 3;
+                            break;
+                        case 436371457:
+                            val = 127;
+                            break;
+                        case 436379649:
+                            val = 15;
+                            break;
+                        default:
+                            val = 1;
+                    }
+
+                    res = decodeManager.SetProperty(symbologies[i], val);
+                    result &= res == 1;
+                }
+            }
+
+            return result;
+        } catch (Exception var7) {
+            HSMLog.e(var7);
+            return false;
         }
-        swiftDecoder = null;
-        return result;
     }
 
     public List<DecoderResult> getResults() {
-        String string = getResult();
-        if (string != null && !string.equalsIgnoreCase("")) {
-            if (string.endsWith("\n")) {
-                string = string.substring(0, string.length() - 1);
-            }
-            String[] results = string.split("\n");
-            if (results.length > 0) {
-                List<DecoderResult> decoderResults = new ArrayList<>();
-                Log.d(TAG, "number of results : " + results.length);
-                for (String result : results) {
-                    if (Constants.DEBUG) {
-                        Log.d(TAG, "result : " + result);
-                    }
-                    DecoderResult decoderResult = gson.fromJson(result, DecoderResult.class);
-                    decoderResults.add(decoderResult);
-                }
-                return decoderResults;
-            }
-        }
         return null;
     }
 

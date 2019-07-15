@@ -14,6 +14,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.SoftReference;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 
 public class BitmapTools {
 
@@ -31,6 +33,24 @@ public class BitmapTools {
         Bitmap bitmap = (Bitmap) softRef.get();
         return bitmap;
     }
+
+    public static byte[] bitmapToBytes(Bitmap bitmap) {
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        int length = width * height;
+        byte[] bytes = new byte[length * 4];
+        Buffer dst = ByteBuffer.wrap(bytes);
+        bitmap.copyPixelsToBuffer(dst);
+        byte[] ret = new byte[length];
+        for (int i = 0; i < length; i++) {
+            ret[i] = (byte) ((bytes[i * 4] + bytes[i * 4 + 1] + bytes[i * 4 + 2] ) / 3);
+        }
+        return ret;
+    }
+
+    public static native byte[] getBytesToDecode(Bitmap bitmap);
+
+    public static native void test(byte[] data);
 
     public static Bitmap getBitmapFormUri(ContentResolver resolver, Uri uri, int width, int height) throws FileNotFoundException, IOException {
         InputStream input = resolver.openInputStream(uri);
@@ -51,7 +71,7 @@ public class BitmapTools {
             be = 1;
         }
         be = 1;
-        Log.d(TAG,  "scale : " + be);
+        Log.d(TAG, "scale : " + be);
         //比例压缩
         BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
         bitmapOptions.inSampleSize = be;//设置缩放比例

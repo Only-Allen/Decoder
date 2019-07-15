@@ -1,12 +1,9 @@
 package com.chx.decoder.activity;
 
-import android.graphics.Bitmap;
-import android.graphics.Rect;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import com.chx.decoder.R;
-import com.chx.decoder.bitmap.BitmapTools;
 import com.chx.decoder.camera.CameraTools;
 import com.chx.decoder.constants.Constants;
 import com.chx.decoder.decoder.result.Point;
@@ -62,10 +59,11 @@ public class CameraActivity extends DecodeActivity {
     }
 
     //begin decode
-    public void onDecodeImage(byte[] data) {
-        Bitmap bitmap = BitmapTools.cameraDataToBitmap(
-                data, Constants.PREVIEW_WIDTH, Constants.PREVIEW_HEIGHT);
-        decodeBitmap(bitmap);
+    public void onDecodeImage(byte[] yuvImage) {//这里是camera的onPreview返回的原始数据
+        int expectedImageSize = Constants.PREVIEW_WIDTH * Constants.PREVIEW_HEIGHT;
+        byte[] ySamples = new byte[expectedImageSize];
+        System.arraycopy(yuvImage, 0, ySamples, 0, expectedImageSize);
+        decode(ySamples, Constants.PREVIEW_WIDTH, Constants.PREVIEW_HEIGHT);
     }
 
     @Override

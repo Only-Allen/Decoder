@@ -1,6 +1,5 @@
 package com.chx.decoder.activity;
 
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -16,7 +15,6 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.chx.decoder.R;
 import com.chx.decoder.comparator.ComparatorFactory;
@@ -65,7 +63,7 @@ public abstract class DecodeActivity extends BaseActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        SwiftDecoder.getInstance().release();
+        SwiftDecoder.getInstance(this).release();
     }
 
     @Override
@@ -160,21 +158,17 @@ public abstract class DecodeActivity extends BaseActivity {
         clearAndHideDrawLayout();
     }
 
-    protected void decodeBitmap(Bitmap bitmap) {
-        if (SwiftDecoder.getInstance().decode(bitmap) == 0) {
-            Toast.makeText(getApplicationContext(), "Decoding failed", Toast.LENGTH_LONG).show();
+    public void decode(byte[] data, int width, int height) {
+        List<DecoderResult> results = SwiftDecoder.getInstance(this).decode(data, width, height);
+        if (results == null || results.size() == 0) {
+            return;
+        }
+        beforeShowResults();
+        if (isROIEnabled()) {
+            mResults = results;
+            showROILayout();
         } else {
-            List<DecoderResult> results = SwiftDecoder.getInstance().getResults();
-            if (results == null || results.size() == 0) {
-                return;
-            }
-            beforeShowResults();
-            if (isROIEnabled()) {
-                mResults = results;
-                showROILayout();
-            } else {
-                onShowResults(results);
-            }
+            onShowResults(results);
         }
     }
 

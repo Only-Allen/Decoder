@@ -4,6 +4,11 @@ import android.graphics.Rect;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import com.honeywell.barcode.BarcodeBounds;
+import com.honeywell.barcode.HSMDecodeResult;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DecoderResult {
     @Expose
@@ -76,6 +81,41 @@ public class DecoderResult {
         bounds.getBottomLeft().setY(rect.bottom);
         bounds.getBottomRight().setX(rect.right);
         bounds.getBottomRight().setY(rect.bottom);
+    }
+
+    public static DecoderResult toDecodeResult(HSMDecodeResult result) {
+        DecoderResult ret = new DecoderResult();
+        ret.setResult(result.getBarcodeData());
+        ret.setLength(result.getBarcodeDataLength());
+        ret.setBounds(toBounds(result.getBarcodeBounds()));
+        if (ret.getBounds() != null) {
+            Point center = new Point();
+            center.setX((ret.getBounds().getTopLeft().getX() + ret.getBounds().getTopRight().getX()) / 2);
+            center.setY((ret.getBounds().getTopLeft().getY() + ret.getBounds().getBottomLeft().getY()) / 2);
+            ret.setCenter(center);
+        }
+        return ret;
+    }
+
+    public static List<DecoderResult> toDecoderResults(HSMDecodeResult[] results) {
+        if (results == null) {
+            return null;
+        }
+        List<DecoderResult> resultList = new ArrayList<>();
+        for (HSMDecodeResult result : results) {
+            DecoderResult d = toDecodeResult(result);
+            resultList.add(d);
+        }
+        return resultList;
+    }
+
+    public static Bounds toBounds(BarcodeBounds bounds) {
+        Bounds b = new Bounds();
+        b.setTopLeft(new Point(bounds.getTopLeft().x, bounds.getTopLeft().y));
+        b.setTopLeft(new Point(bounds.getTopRight().x, bounds.getTopRight().y));
+        b.setTopLeft(new Point(bounds.getBottomLeft().x, bounds.getBottomLeft().y));
+        b.setTopLeft(new Point(bounds.getBottomRight().x, bounds.getBottomRight().y));
+        return b;
     }
 
     public static void main(String[] args) {

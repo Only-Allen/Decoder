@@ -20,27 +20,13 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        native-lib.c)
+        native-lib.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
 # default, you only need to specify the name of the public NDK library
 # you want to add. CMake verifies that the library exists before
 # completing its build.
-
-add_library(
-        decoder
-        STATIC
-        IMPORTED)
-set_target_properties( # Specifies the target library.
-        decoder
-
-        # Specifies the parameter you want to define.
-        PROPERTIES IMPORTED_LOCATION
-
-        # Provides the path to the library you want to import.
-        ${CMAKE_SOURCE_DIR}/decoder/armeabi/libansx.a)
-
 
 find_library( # Sets the name of the path variable.
         log-lib
@@ -57,11 +43,7 @@ include_directories(include)
 
 target_link_libraries( # Specifies the target library.
         native-lib
-        decoder
-
         # Links the target library to the log library
         # included in the NDK.
         jnigraphics
-        z
-        dl
         ${log-lib})
