@@ -56,8 +56,10 @@ public class ImageActivity extends DecodeActivity {
                     mImageView.setImageBitmap(bitmap);
                     mWidth = bitmap.getWidth();
                     mHeight = bitmap.getHeight();
-//                    decodeBitmap(bitmap);
                     decode(BitmapTools.getBytesToDecode(bitmap), mWidth, mHeight);
+//                    mWidth = 832;
+//                    mHeight = 640;
+//                    decode(BitmapTools.getBmpFileBytes("/storage/sdcard0/Tencent/QQfile_recv/cam.BMP"), mWidth, mHeight);
                 } catch (Exception e) {
                     Log.e(TAG, "generate bitmap failed!", e);
                 }

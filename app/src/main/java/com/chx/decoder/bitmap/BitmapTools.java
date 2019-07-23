@@ -10,6 +10,8 @@ import android.net.Uri;
 import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,18 +52,44 @@ public class BitmapTools {
 
     public static native byte[] getBytesToDecode(Bitmap bitmap);
 
-    public static native void test(byte[] data);
+    public static native byte[] bmpFileToBytes(String path);
+
+    public static byte[] getBmpFileBytes(String path) {
+        File file = new File(path);
+        if (!file.exists()) {
+            Log.e(TAG, "file not exists!");
+            return null;
+        }
+        FileInputStream fis = null;
+        byte[] buffer = null;
+        try {
+            fis = new FileInputStream(file);
+            int countAll = fis.available();
+            fis.skip(1078);
+            buffer = new byte[countAll - 1078];
+            int count = fis.read(buffer, 0, buffer.length);
+            Log.d(TAG, "read count: " + count);
+        } catch (Exception e) {
+            Log.e(TAG, "read file buffer failed!", e);
+            try {
+                fis.close();
+            } catch (Exception e1) {
+                Log.e(TAG, "close file input stream failed!", e);
+            }
+        }
+        return buffer;
+    }
 
     public static Bitmap getBitmapFormUri(ContentResolver resolver, Uri uri, int width, int height) throws FileNotFoundException, IOException {
         InputStream input = resolver.openInputStream(uri);
-        BitmapFactory.Options onlyBoundsOptions = new BitmapFactory.Options();
-        onlyBoundsOptions.inJustDecodeBounds = true;
-        onlyBoundsOptions.inDither = true;//optional
-        onlyBoundsOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;//optional
-        BitmapFactory.decodeStream(input, null, onlyBoundsOptions);
+        BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+        bitmapOptions.inJustDecodeBounds = true;
+        bitmapOptions.inDither = true;//optional
+        bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;//optional
+        BitmapFactory.decodeStream(input, null, bitmapOptions);
         input.close();
-        int originalWidth = onlyBoundsOptions.outWidth;
-        int originalHeight = onlyBoundsOptions.outHeight;
+        int originalWidth = bitmapOptions.outWidth;
+        int originalHeight = bitmapOptions.outHeight;
         if ((originalWidth == -1) || (originalHeight == -1))
             return null;
         Log.d(TAG, originalWidth + "..." + originalHeight);
@@ -73,10 +101,8 @@ public class BitmapTools {
         be = 1;
         Log.d(TAG, "scale : " + be);
         //比例压缩
-        BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+        bitmapOptions.inJustDecodeBounds = false;
         bitmapOptions.inSampleSize = be;//设置缩放比例
-        bitmapOptions.inDither = true;//optional
-        bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;//optional
         input = resolver.openInputStream(uri);
         Bitmap bitmap = BitmapFactory.decodeStream(input, null, bitmapOptions);
         input.close();

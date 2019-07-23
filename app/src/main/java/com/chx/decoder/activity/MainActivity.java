@@ -23,17 +23,23 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 //            finish();
 //        }
         initView();
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                SwiftDecoder.activateIfNeed(MainActivity.this);
-//            }
-//        }).start();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                SwiftDecoder.activateIfNeed(MainActivity.this);
+            }
+        }).start();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+    }
+
+    @Override
+    protected void onDestroy() {
+        SwiftDecoder.release();
+        super.onDestroy();
     }
 
     public void initView() {

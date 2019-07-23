@@ -17,6 +17,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.chx.decoder.R;
+import com.chx.decoder.camera.CameraTools;
 import com.chx.decoder.comparator.ComparatorFactory;
 import com.chx.decoder.decoder.SwiftDecoder;
 import com.chx.decoder.decoder.result.Bounds;
@@ -58,12 +59,6 @@ public abstract class DecodeActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(getLayoutResource());
         initView();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        SwiftDecoder.getInstance(this).release();
     }
 
     @Override
@@ -159,6 +154,7 @@ public abstract class DecodeActivity extends BaseActivity {
     }
 
     public void decode(byte[] data, int width, int height) {
+        CameraTools.getInstance().saveBytes(data);
         List<DecoderResult> results = SwiftDecoder.getInstance(this).decode(data, width, height);
         if (results == null || results.size() == 0) {
             return;

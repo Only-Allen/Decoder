@@ -10,6 +10,9 @@ import android.view.SurfaceHolder;
 
 import com.chx.decoder.constants.Constants;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Arrays;
 import java.util.List;
 
 public class CameraTools {
@@ -92,6 +95,11 @@ public class CameraTools {
 //            printSupportedFormats(parameter);
             parameter.setPreviewSize(Constants.PREVIEW_WIDTH, Constants.PREVIEW_HEIGHT);
             parameter.setPictureSize(Constants.PREVIEW_WIDTH, Constants.PREVIEW_HEIGHT);
+            List<Integer> sizes = parameter.getSupportedPreviewFormats();
+            Log.d(TAG, "supported preview size: " + Arrays.toString(sizes.toArray()));
+            if (sizes.contains(17)) {
+                parameter.setPreviewFormat(17);
+            }
 //            parameter.setPreviewFormat(ImageFormat.RGB_565);
             mCamera.setParameters(parameter);
 //            mCamera.setDisplayOrientation(90);
@@ -176,10 +184,34 @@ public class CameraTools {
         mCamera.setPreviewCallback(new Camera.PreviewCallback() {
             @Override
             public void onPreviewFrame(byte[] bytes, Camera camera) {
+//                saveBytes(bytes);
                 mCallback.onPreview(bytes);
                 mCamera.setPreviewCallback(null);
             }
         });
+    }
+
+    public void saveBytes(byte[] data) {
+        FileOutputStream fos = null;
+        try {
+            File file = new File("/storage/sdcard0/bmp");
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            fos = new FileOutputStream(file);
+            fos.write(data, 0, data.length);
+        } catch (Exception e) {
+            Log.e(TAG, "save bytes to file failed!", e);
+        } finally {
+            try {
+                if (fos != null) {
+                    fos.flush();
+                    fos.close();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "flush and close failed!", e);
+            }
+        }
     }
 
     public void doAutoFocus() {

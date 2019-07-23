@@ -112,9 +112,9 @@ public class DecoderResult {
     public static Bounds toBounds(BarcodeBounds bounds) {
         Bounds b = new Bounds();
         b.setTopLeft(new Point(bounds.getTopLeft().x, bounds.getTopLeft().y));
-        b.setTopLeft(new Point(bounds.getTopRight().x, bounds.getTopRight().y));
-        b.setTopLeft(new Point(bounds.getBottomLeft().x, bounds.getBottomLeft().y));
-        b.setTopLeft(new Point(bounds.getBottomRight().x, bounds.getBottomRight().y));
+        b.setTopRight(new Point(bounds.getTopRight().x, bounds.getTopRight().y));
+        b.setBottomLeft(new Point(bounds.getBottomLeft().x, bounds.getBottomLeft().y));
+        b.setBottomRight(new Point(bounds.getBottomRight().x, bounds.getBottomRight().y));
         return b;
     }
 

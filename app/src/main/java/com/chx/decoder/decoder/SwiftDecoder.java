@@ -3,13 +3,18 @@ package com.chx.decoder.decoder;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.util.Log;
 
 import com.chx.decoder.decoder.result.DecoderResult;
 import com.honeywell.barcode.DecodeManager;
 import com.honeywell.barcode.HSMDecodeResult;
+import com.honeywell.barcode.HSMDecoder;
 import com.honeywell.barcode.Symbology;
+import com.honeywell.barcode.WindowMode;
+import com.honeywell.license.ActivationManager;
 import com.honeywell.misc.HSMLog;
+import com.honeywell.plugins.decode.DecodeResultListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,19 +34,29 @@ public class SwiftDecoder {
 
     private static final String TAG = "SwiftDecoder";
 
+//    private HSMDecoder mHSMDecoder;
     private DecodeManager decodeManager;
 
     private SwiftDecoder(Context context) {
+//        mHSMDecoder = HSMDecoder.getInstance(context);
         decodeManager = DecodeManager.getInstance(context);
         initDecodeManager();
+//        mHSMDecoder.addResultListener(new DecodeResultListener() {
+//            @Override
+//            public void onHSMDecodeResult(HSMDecodeResult[] hsmDecodeResults) {
+//                Log.d(TAG, "");
+//            }
+//        });
     }
 
     private void initDecodeManager() {
-        decodeManager.enableDecoding(true);
-        enableSymbology(Symbology.UPCA);
-        enableSymbology(Symbology.CODE128);
-        enableSymbology(Symbology.CODE39);
-        enableSymbology(Symbology.QR);
+//        mHSMDecoder.releaseCameraConnection();
+//        mHSMDecoder.enableSymbology(Symbology.UPCA);
+//        mHSMDecoder.enableSymbology(Symbology.CODE128);
+//        mHSMDecoder.enableSymbology(Symbology.CODE39);
+//        mHSMDecoder.enableSymbology(Symbology.QR);
+        int[] symbols = new int[] {Symbology.UPCA, Symbology.CODE128, Symbology.CODE39, Symbology.QR};
+        enableSymbology(symbols);
     }
 
     public static SwiftDecoder getInstance(Context context) {
@@ -60,8 +75,10 @@ public class SwiftDecoder {
         swiftDecoder = null;
     }
 
-    public static int activateIfNeed(Context context) {
-        return DecodeManager.getInstance(context).activate("");
+    public static void activateIfNeed(Context context) {
+        if (!ActivationManager.isActivated(context)) {
+            ActivationManager.activate(context, "trial-test1-tjian-02012019");
+        }
     }
 
     //return 0 means error occur
@@ -71,18 +88,9 @@ public class SwiftDecoder {
     }
 
     public List<DecoderResult> decode(byte[] bytes, int width, int height) {
+//        HSMDecodeResult[] results = mHSMDecoder.decodeImage(bytes, width, height);
         HSMDecodeResult[] results = decodeManager.decode(bytes, width, height);
         return DecoderResult.toDecoderResults(results);
-    }
-
-    public boolean enableSymbology(int symbology) {
-        try {
-            int[] symbs = new int[]{symbology};
-            return this.enableSymbology(symbs);
-        } catch (Exception var3) {
-            HSMLog.e(var3);
-            return false;
-        }
     }
 
     public boolean enableSymbology(int[] symbologies) {
@@ -93,20 +101,20 @@ public class SwiftDecoder {
             int i = symbologies.length;
 
             int res;
-            for (int var5 = 0; var5 < i; ++var5) {
+            for(int var5 = 0; var5 < i; ++var5) {
                 res = var3[var5];
                 params.put("SymbologyId", String.valueOf(res));
             }
 
             boolean result = true;
 
-            for (i = 0; i < symbologies.length; ++i) {
-                int val;
+            for(i = 0; i < symbologies.length; ++i) {
                 if (symbologies[i] >= 1 && symbologies[i] <= 30) {
                     res = decodeManager.SetProperty(437321729, symbologies[i]);
                     result &= res == 1;
                 } else {
-                    switch (symbologies[i]) {
+                    byte val;
+                    switch(symbologies[i]) {
                         case 436367361:
                         case 436375553:
                             val = 3;
@@ -128,7 +136,7 @@ public class SwiftDecoder {
 
             return result;
         } catch (Exception var7) {
-            HSMLog.e(var7);
+            Log.e(TAG, "enable symbology failed", var7);
             return false;
         }
     }

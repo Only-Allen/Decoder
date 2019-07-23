@@ -80,3 +80,27 @@ Java_com_chx_decoder_bitmap_BitmapTools_getBytesToDecode(JNIEnv *env, jclass typ
     env->SetByteArrayRegion(array, 0, image_size, (jbyte*) ImageBuffer);
     return array;
 }
+extern "C" JNIEXPORT jbyteArray JNICALL
+Java_com_chx_decoder_bitmap_BitmapTools_bmpFileToBytes(JNIEnv *env, jclass type, jstring path_) {
+    const char *path = env->GetStringUTFChars(path_, 0);
+    FILE *file = NULL;
+    __android_log_print(ANDROID_LOG_DEBUG, TAG, "file path: %s", path);
+    file = fopen ("/storage/sdcard0/Tencent/QQfile_recv/cam.BMP", "rb+");
+
+    if (NULL == file)
+    {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "Failed to open file\n");
+        return 0;
+    }
+
+    static unsigned char *ImageBuffer;
+    ImageBuffer = (unsigned char*)malloc(832*640);
+    fseek (file, 1078L, 0);  //跳过1078字节的BMP文件头
+    fread (ImageBuffer, (832*640-1078), 1, file);   //从文件读入图片数据，字节大小尺寸等于解析度
+    fclose (file);
+    __android_log_print(ANDROID_LOG_DEBUG, TAG, "OK to read file");
+    env->ReleaseStringUTFChars(path_, path);
+    jbyteArray array = env->NewByteArray(832*640);
+    env->SetByteArrayRegion(array, 0, 832*640, (jbyte*) ImageBuffer);
+    return array;
+}
