@@ -98,7 +98,7 @@ public class BitmapTools {
         if (be <= 0) {//如果缩放比比1小，那么保持原图不缩放
             be = 1;
         }
-        be = 1;
+//        be = 1;
         Log.d(TAG, "scale : " + be);
         //比例压缩
         bitmapOptions.inJustDecodeBounds = false;
