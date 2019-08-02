@@ -55,7 +55,8 @@ public class SwiftDecoder {
 //        mHSMDecoder.enableSymbology(Symbology.CODE128);
 //        mHSMDecoder.enableSymbology(Symbology.CODE39);
 //        mHSMDecoder.enableSymbology(Symbology.QR);
-        int[] symbols = new int[] {Symbology.UPCA, Symbology.CODE128, Symbology.CODE39, Symbology.QR};
+        int[] symbols = new int[] {Symbology.UPCA, Symbology.CODE128, Symbology.CODE39,
+                Symbology.QR, Symbology.DATAMATRIX, Symbology.DATAMATRIX_RECTANGLE};
         enableSymbology(symbols);
     }
 
